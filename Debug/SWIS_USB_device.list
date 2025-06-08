@@ -11175,7 +11175,7 @@ static uint8_t USBD_CUSTOM_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   (void)USBD_LL_OpenEP(pdev, CUSTOMHIDInEpAdd, USBD_EP_TYPE_INTR,
  8004570:	4b21      	ldr	r3, [pc, #132]	@ (80045f8 <USBD_CUSTOM_HID_Init+0x150>)
  8004572:	7819      	ldrb	r1, [r3, #0]
- 8004574:	2302      	movs	r3, #2
+ 8004574:	2340      	movs	r3, #64	@ 0x40
  8004576:	2203      	movs	r2, #3
  8004578:	6878      	ldr	r0, [r7, #4]
  800457a:	f002 f9a0 	bl	80068be <USBD_LL_OpenEP>
@@ -11202,7 +11202,7 @@ static uint8_t USBD_CUSTOM_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   (void)USBD_LL_OpenEP(pdev, CUSTOMHIDOutEpAdd, USBD_EP_TYPE_INTR,
  8004598:	4b18      	ldr	r3, [pc, #96]	@ (80045fc <USBD_CUSTOM_HID_Init+0x154>)
  800459a:	7819      	ldrb	r1, [r3, #0]
- 800459c:	2302      	movs	r3, #2
+ 800459c:	2340      	movs	r3, #64	@ 0x40
  800459e:	2203      	movs	r2, #3
  80045a0:	6878      	ldr	r0, [r7, #4]
  80045a2:	f002 f98c 	bl	80068be <USBD_LL_OpenEP>
@@ -11915,7 +11915,7 @@ static uint8_t *USBD_CUSTOM_HID_GetFSCfgDesc(uint16_t *length)
     pEpInDesc->wMaxPacketSize = CUSTOM_HID_EPIN_SIZE;
  80049d2:	68fb      	ldr	r3, [r7, #12]
  80049d4:	2200      	movs	r2, #0
- 80049d6:	f042 0202 	orr.w	r2, r2, #2
+ 80049d6:	f042 0240 	orr.w	r2, r2, #64	@ 0x40
  80049da:	711a      	strb	r2, [r3, #4]
  80049dc:	2200      	movs	r2, #0
  80049de:	715a      	strb	r2, [r3, #5]
@@ -11933,7 +11933,7 @@ static uint8_t *USBD_CUSTOM_HID_GetFSCfgDesc(uint16_t *length)
     pEpOutDesc->wMaxPacketSize = CUSTOM_HID_EPOUT_SIZE;
  80049ec:	68bb      	ldr	r3, [r7, #8]
  80049ee:	2200      	movs	r2, #0
- 80049f0:	f042 0202 	orr.w	r2, r2, #2
+ 80049f0:	f042 0240 	orr.w	r2, r2, #64	@ 0x40
  80049f4:	711a      	strb	r2, [r3, #4]
  80049f6:	2200      	movs	r2, #0
  80049f8:	715a      	strb	r2, [r3, #5]
@@ -11986,7 +11986,7 @@ static uint8_t *USBD_CUSTOM_HID_GetHSCfgDesc(uint16_t *length)
     pEpInDesc->wMaxPacketSize = CUSTOM_HID_EPIN_SIZE;
  8004a36:	68fb      	ldr	r3, [r7, #12]
  8004a38:	2200      	movs	r2, #0
- 8004a3a:	f042 0202 	orr.w	r2, r2, #2
+ 8004a3a:	f042 0240 	orr.w	r2, r2, #64	@ 0x40
  8004a3e:	711a      	strb	r2, [r3, #4]
  8004a40:	2200      	movs	r2, #0
  8004a42:	715a      	strb	r2, [r3, #5]
@@ -12004,7 +12004,7 @@ static uint8_t *USBD_CUSTOM_HID_GetHSCfgDesc(uint16_t *length)
     pEpOutDesc->wMaxPacketSize = CUSTOM_HID_EPOUT_SIZE;
  8004a50:	68bb      	ldr	r3, [r7, #8]
  8004a52:	2200      	movs	r2, #0
- 8004a54:	f042 0202 	orr.w	r2, r2, #2
+ 8004a54:	f042 0240 	orr.w	r2, r2, #64	@ 0x40
  8004a58:	711a      	strb	r2, [r3, #4]
  8004a5a:	2200      	movs	r2, #0
  8004a5c:	715a      	strb	r2, [r3, #5]
@@ -12057,7 +12057,7 @@ static uint8_t *USBD_CUSTOM_HID_GetOtherSpeedCfgDesc(uint16_t *length)
     pEpInDesc->wMaxPacketSize = CUSTOM_HID_EPIN_SIZE;
  8004a9a:	68fb      	ldr	r3, [r7, #12]
  8004a9c:	2200      	movs	r2, #0
- 8004a9e:	f042 0202 	orr.w	r2, r2, #2
+ 8004a9e:	f042 0240 	orr.w	r2, r2, #64	@ 0x40
  8004aa2:	711a      	strb	r2, [r3, #4]
  8004aa4:	2200      	movs	r2, #0
  8004aa6:	715a      	strb	r2, [r3, #5]
@@ -12075,7 +12075,7 @@ static uint8_t *USBD_CUSTOM_HID_GetOtherSpeedCfgDesc(uint16_t *length)
     pEpOutDesc->wMaxPacketSize = CUSTOM_HID_EPOUT_SIZE;
  8004ab4:	68bb      	ldr	r3, [r7, #8]
  8004ab6:	2200      	movs	r2, #0
- 8004ab8:	f042 0202 	orr.w	r2, r2, #2
+ 8004ab8:	f042 0240 	orr.w	r2, r2, #64	@ 0x40
  8004abc:	711a      	strb	r2, [r3, #4]
  8004abe:	2200      	movs	r2, #0
  8004ac0:	715a      	strb	r2, [r3, #5]
