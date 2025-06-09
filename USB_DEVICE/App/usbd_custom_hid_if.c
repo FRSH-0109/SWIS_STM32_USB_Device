@@ -168,8 +168,8 @@ USBD_CUSTOM_HID_ItfTypeDef USBD_CustomHID_fops_FS =
 static int8_t CUSTOM_HID_Init_FS(void)
 {
   /* USER CODE BEGIN 4 */
-//  USBD_LL_OpenEP(&hUsbDeviceFS, CUSTOM_HID_EPIN_ADDR, USBD_EP_TYPE_INTR, CUSTOM_HID_EPIN_SIZE);  // IN
-//  USBD_LL_OpenEP(&hUsbDeviceFS, CUSTOM_HID_EPOUT_ADDR, USBD_EP_TYPE_INTR, CUSTOM_HID_EPOUT_SIZE); // OUT
+  USBD_LL_OpenEP(&hUsbDeviceFS, CUSTOM_HID_EPIN_ADDR, USBD_EP_TYPE_INTR, CUSTOM_HID_EPIN_SIZE);  // IN
+  USBD_LL_OpenEP(&hUsbDeviceFS, CUSTOM_HID_EPOUT_ADDR, USBD_EP_TYPE_INTR, CUSTOM_HID_EPOUT_SIZE); // OUT
   return (USBD_OK);
   /* USER CODE END 4 */
 }
@@ -196,7 +196,18 @@ static int8_t CUSTOM_HID_DeInit_FS(void)
 static int8_t CUSTOM_HID_OutEvent_FS(uint8_t *buffer)
 {
   /* USER CODE BEGIN 6 */
-  UNUSED(buffer);
+  HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
+
+  uint8_t report[8] = {0};
+  report[0] = buffer[0];
+  report[1] = 'R';
+  report[2] = 'A';
+  report[3] = 'D';
+  report[4] = 'Z';
+  report[5] = 'I';
+  report[6] = 'U';
+  report[7] = '!';
+  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report, sizeof(report));
 
   /* Start next USB packet transfer once data processing is completed */
   if (USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS) != (uint8_t)USBD_OK)

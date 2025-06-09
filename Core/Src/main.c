@@ -91,10 +91,6 @@ int main(void)
   MX_GPIO_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t report[8] = {0};
-  report[0] = 1;
-  report[3] = 'a';
-  report[7] = 255;
 
   /* USER CODE END 2 */
 
@@ -102,9 +98,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	  HAL_Delay(1000);
-	  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report, sizeof(report));
+	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+	HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
