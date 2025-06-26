@@ -22,7 +22,7 @@
 #include "usbd_custom_hid_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "main.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -198,16 +198,7 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t *buffer)
   /* USER CODE BEGIN 6 */
   HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 
-  uint8_t report[8] = {0};
-  report[0] = buffer[0];
-  report[1] = 'R';
-  report[2] = 'A';
-  report[3] = 'D';
-  report[4] = 'Z';
-  report[5] = 'I';
-  report[6] = 'U';
-  report[7] = '!';
-  USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report, sizeof(report));
+  usb_parser(buffer, 64);
 
   /* Start next USB packet transfer once data processing is completed */
   if (USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS) != (uint8_t)USBD_OK)

@@ -24,8 +24,6 @@
 extern "C" {
 #endif
 
-#define USBD_CUSTOMHID_REPORT_BUFFER_EVENT_ENABLED
-
 /* Includes ------------------------------------------------------------------*/
 #include  "usbd_ioreq.h"
 
@@ -47,7 +45,7 @@ extern "C" {
 #endif /* CUSTOM_HID_EPIN_ADDR */
 
 #ifndef CUSTOM_HID_EPIN_SIZE
-#define CUSTOM_HID_EPIN_SIZE                         0x40U
+#define CUSTOM_HID_EPIN_SIZE                         64U
 #endif /* CUSTOM_HID_EPIN_SIZE */
 
 #ifndef CUSTOM_HID_EPOUT_ADDR
@@ -55,7 +53,7 @@ extern "C" {
 #endif /* CUSTOM_HID_EPOUT_ADDR */
 
 #ifndef CUSTOM_HID_EPOUT_SIZE
-#define CUSTOM_HID_EPOUT_SIZE                        0x40U
+#define CUSTOM_HID_EPOUT_SIZE                        64U
 #endif /* CUSTOM_HID_EPOUT_SIZE*/
 
 #define USB_CUSTOM_HID_CONFIG_DESC_SIZ               41U
@@ -70,7 +68,7 @@ extern "C" {
 #endif /* CUSTOM_HID_FS_BINTERVAL */
 
 #ifndef USBD_CUSTOMHID_OUTREPORT_BUF_SIZE
-#define USBD_CUSTOMHID_OUTREPORT_BUF_SIZE            0x02U
+#define USBD_CUSTOMHID_OUTREPORT_BUF_SIZE            64U
 #endif /* USBD_CUSTOMHID_OUTREPORT_BUF_SIZE */
 
 #ifndef USBD_CUSTOM_HID_REPORT_DESC_SIZE
@@ -91,6 +89,7 @@ extern "C" {
 /**
   * @}
   */
+#define USBD_CUSTOMHID_REPORT_BUFFER_EVENT_ENABLED	1
 
 /** @defgroup USBD_CORE_Exported_TypesDefinitions
   * @{

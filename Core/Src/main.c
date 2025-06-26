@@ -18,12 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
+#include "spi.h"
 #include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_customhid.h"
+#include "shtc3_driver.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END Includes */
@@ -46,7 +49,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+shtc3_t shtc3_sensor;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,7 +93,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USB_DEVICE_Init();
+  MX_I2C1_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+  shtc3_init(&shtc3_sensor, &hi2c1, SHTC3_I2C_ADDR);
+  shtc3_wakeup(&shtc3_sensor);
+  shtc3_get_id(&shtc3_sensor);
+  shtc3_sleep(&shtc3_sensor);
 
   /* USER CODE END 2 */
 
@@ -98,13 +107,36 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+
+	switch(shtc3_sensor.state)
+	{
+		case SHTC3_MEASURE:
+			break;
+
+		case STHC3_IDLE:
+		default:
+			break;
+	}
+//	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+	shtc3_get_temp_and_hum(&shtc3_sensor);
 	HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void usb_parser(uint8_t *buffer, uint16_t max_len)
+{
+	if(0 == strncmp((char *)buffer, SHTC3_CMD_READ_DATA, (strlen(SHTC3_CMD_READ_DATA) > max_len ? max_len : strlen(SHTC3_CMD_READ_DATA))))
+	{
+		uint8_t report[64];
+		memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
+		memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
+		while (((USBD_CUSTOM_HID_HandleTypeDef*)hUsbDeviceFS.pClassData)->state != CUSTOM_HID_IDLE);
+		USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report, 8);
+	}
 }
 
 /**

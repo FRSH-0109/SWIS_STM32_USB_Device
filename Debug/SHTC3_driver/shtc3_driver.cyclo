@@ -1,0 +1,14 @@
+../SHTC3_driver/shtc3_driver.c:75:5:shtc3_init	1
+../SHTC3_driver/shtc3_driver.c:91:5:shtc3_get_id	2
+../SHTC3_driver/shtc3_driver.c:117:5:shtc3_get_temp_and_hum	3
+../SHTC3_driver/shtc3_driver.c:151:6:shtc3_get_temp_and_hum_lpm	3
+../SHTC3_driver/shtc3_driver.c:185:5:shtc3_get_temp_and_hum_polling	1
+../SHTC3_driver/shtc3_driver.c:199:5:shtc3_sleep	1
+../SHTC3_driver/shtc3_driver.c:213:5:shtc3_wakeup	1
+../SHTC3_driver/shtc3_driver.c:229:5:shtc3_soft_reset	1
+../SHTC3_driver/shtc3_driver.c:244:15:shtc3_reg_read	2
+../SHTC3_driver/shtc3_driver.c:259:15:shtc3_reg_write	2
+../SHTC3_driver/shtc3_driver.c:280:16:generate_crc	4
+../SHTC3_driver/shtc3_driver.c:304:13:check_crc	2
+../SHTC3_driver/shtc3_driver.c:312:14:calc_temp	1
+../SHTC3_driver/shtc3_driver.c:317:14:calc_hum	1

@@ -36,7 +36,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+void usb_parser(uint8_t *buffer, uint16_t max_len);
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -79,12 +79,12 @@ void Error_Handler(void);
 #define PDM_OUT_GPIO_Port GPIOC
 #define I2S3_WS_Pin GPIO_PIN_4
 #define I2S3_WS_GPIO_Port GPIOA
-#define SPI1_SCK_Pin GPIO_PIN_5
-#define SPI1_SCK_GPIO_Port GPIOA
-#define SPI1_MISO_Pin GPIO_PIN_6
-#define SPI1_MISO_GPIO_Port GPIOA
-#define SPI1_MOSI_Pin GPIO_PIN_7
-#define SPI1_MOSI_GPIO_Port GPIOA
+#define BME280_SCK_Pin GPIO_PIN_5
+#define BME280_SCK_GPIO_Port GPIOA
+#define BME280_MISO_Pin GPIO_PIN_6
+#define BME280_MISO_GPIO_Port GPIOA
+#define BME280_MOSI_Pin GPIO_PIN_7
+#define BME280_MOSI_GPIO_Port GPIOA
 #define CLK_IN_Pin GPIO_PIN_10
 #define CLK_IN_GPIO_Port GPIOB
 #define LD4_Pin GPIO_PIN_12
@@ -119,10 +119,10 @@ void Error_Handler(void);
 #define OTG_FS_OverCurrent_GPIO_Port GPIOD
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define Audio_SCL_Pin GPIO_PIN_6
-#define Audio_SCL_GPIO_Port GPIOB
-#define Audio_SDA_Pin GPIO_PIN_9
-#define Audio_SDA_GPIO_Port GPIOB
+#define SHTC3_SDA_Pin GPIO_PIN_6
+#define SHTC3_SDA_GPIO_Port GPIOB
+#define SHTC3_SCL_Pin GPIO_PIN_9
+#define SHTC3_SCL_GPIO_Port GPIOB
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 
