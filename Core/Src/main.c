@@ -55,7 +55,7 @@ shtc3_t shtc3_sensor;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+static void usbSend(uint8_t *report, uint8_t len);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -108,18 +108,33 @@ int main(void)
   while (1)
   {
 
+	uint8_t ret	= 0;
 	switch(shtc3_sensor.state)
 	{
-		case SHTC3_MEASURE:
+		case SHTC3_SINGLE_MEASURE_START:
+			 ret = shtc3_raw_write_temp_and_hum(&shtc3_sensor);
+			if(0 == ret) {shtc3_sensor.state = SHTC3_SINGLE_MEASURE;}
+		case SHTC3_SINGLE_MEASURE:
+			uint8_t report[64] = {0};
+			ret = shtc3_raw_read_temp_and_hum(&shtc3_sensor);
+			if(0 == ret)
+			{
+				shtc3_sleep(&shtc3_sensor);
+				memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
+				memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
+				usbSend(report, 8);
+				shtc3_sensor.state = STHC3_IDLE;
+			}
+			break;
+
+		case SHTC3_CYCLIC_MEASURE:
 			break;
 
 		case STHC3_IDLE:
 		default:
+			shtc3_get_temp_and_hum(&shtc3_sensor);
 			break;
 	}
-//	HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	shtc3_get_temp_and_hum(&shtc3_sensor);
-	HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -127,15 +142,48 @@ int main(void)
   /* USER CODE END 3 */
 }
 
+static bool compareStrings(uint8_t *buffer, char *str, uint16_t max_len)
+{
+	return (0 == strncmp((char *)buffer, str, (strlen(str) > max_len ? max_len : strlen(str))));
+}
+
+static void usbSend(uint8_t *report, uint8_t len)
+{
+	if(hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED)
+	{
+		while (((USBD_CUSTOM_HID_HandleTypeDef*)hUsbDeviceFS.pClassData)->state != CUSTOM_HID_IDLE);
+		USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report, len);
+	}
+}
+
 void usb_parser(uint8_t *buffer, uint16_t max_len)
 {
-	if(0 == strncmp((char *)buffer, SHTC3_CMD_READ_DATA, (strlen(SHTC3_CMD_READ_DATA) > max_len ? max_len : strlen(SHTC3_CMD_READ_DATA))))
+	if(compareStrings(buffer, SHTC3_CMD_READ_DATA, max_len))
 	{
-		uint8_t report[64];
+		uint8_t report[8];
 		memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
 		memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
-		while (((USBD_CUSTOM_HID_HandleTypeDef*)hUsbDeviceFS.pClassData)->state != CUSTOM_HID_IDLE);
-		USBD_CUSTOM_HID_SendReport(&hUsbDeviceFS, report, 8);
+		usbSend(report, sizeof(report));
+	}
+	else if(compareStrings(buffer, SHTC3_CMD_READ_STATE, max_len))
+	{
+		uint8_t report[64] = {0};
+		switch (shtc3_sensor.state)
+		{
+			case STHC3_IDLE:
+				sprintf((char *)report, "SHTC3 IDLE");
+				break;
+			case SHTC3_SINGLE_MEASURE:
+				sprintf((char *)report, "SHTC3 SINGLE MEASURE");
+				break;
+			case SHTC3_CYCLIC_MEASURE:
+				sprintf((char *)report, "SHTC3 CYCLIC MEASURE");
+				break;
+			default:
+				sprintf((char *)report, "SHTC3 UNKNOW");
+				break;
+		}
+		usbSend(report, strlen((char *)report));
 	}
 }
 

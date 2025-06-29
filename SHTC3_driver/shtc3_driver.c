@@ -140,6 +140,7 @@ int shtc3_get_temp_and_hum(shtc3_t *const me)
 	me->temp = calc_temp((uint16_t)((data[0] << 8) | (data[1])));
 	me->hum = calc_hum((uint16_t)((data[3] << 8) | (data[4])));
 
+	shtc3_sleep(me);
 	/* Return 0 */
 	return ret;
 }
@@ -182,12 +183,69 @@ int shtc3_get_temp_and_hum(shtc3_t *const me)
  * @brief Function to get the temperature (°C) and humidity (%). This function
  *        polls every 1 ms until measumente is ready
  */
-int shtc3_get_temp_and_hum_polling(shtc3_t *const me, float *temp, float *hum)
+int shtc3_get_temp_and_hum_polling(shtc3_t *const me)
 {
 	/* Variable to return error code */
 	int ret = 0;
 
-	/* todo: write */
+	shtc3_wakeup(me);
+
+	shtc3_reg_write(SHTC3_CMD_MEAS_T_RH_POLLING_NM, &me->i2c_dev);
+
+	uint8_t data[6] = {0};
+	do {
+		ret = shtc3_reg_read(data, 6, &me->i2c_dev);
+	} while (0 != ret);
+
+	/* Check data received CRC */
+	if (!check_crc(&data[0], 2, data[2])) {
+		return -1;
+	}
+
+	if (!check_crc(&data[3], 2, data[5])) {
+		return -1;
+	}
+
+	me->temp = calc_temp((uint16_t)((data[0] << 8) | (data[1])));
+	me->hum = calc_hum((uint16_t)((data[3] << 8) | (data[4])));
+
+	shtc3_sleep(me);
+	/* Return 0 */
+	return ret;
+}
+
+int shtc3_raw_write_temp_and_hum(shtc3_t *const me)
+{
+	/* Variable to return error code */
+	int ret = 0;
+
+	shtc3_wakeup(me);
+
+	ret = shtc3_reg_write(SHTC3_CMD_MEAS_T_RH_POLLING_NM, &me->i2c_dev);
+
+	return ret;
+}
+
+int shtc3_raw_read_temp_and_hum(shtc3_t *const me)
+{
+	/* Variable to return error code */
+	int ret = 0;
+
+	uint8_t data[6] = {0};
+	ret = shtc3_reg_read(data, 6, &me->i2c_dev);
+	if(0 != ret) {return ret;}
+
+	/* Check data received CRC */
+	if (!check_crc(&data[0], 2, data[2])) {
+		return -1;
+	}
+
+	if (!check_crc(&data[3], 2, data[5])) {
+		return -1;
+	}
+
+	me->temp = calc_temp((uint16_t)((data[0] << 8) | (data[1])));
+	me->hum = calc_hum((uint16_t)((data[3] << 8) | (data[4])));
 
 	/* Return 0 */
 	return ret;
@@ -246,7 +304,7 @@ static int8_t shtc3_reg_read(uint8_t *data, uint32_t data_len, void *intf)
 	shtc3_i2c_t *i2c_dev = (shtc3_i2c_t *)intf;
 
 	if (HAL_I2C_Master_Receive(i2c_dev->handle, (i2c_dev->addr << 1) | 0x01,
-			data, data_len, 100) > 0) {
+			data, data_len, 10) > 0) {
 		return -1;
 	}
 

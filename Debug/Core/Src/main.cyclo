@@ -1,4 +1,6 @@
-../Core/Src/main.c:70:5:main	1
-../Core/Src/main.c:130:6:usb_parser	3
-../Core/Src/main.c:146:6:SystemClock_Config	3
-../Core/Src/main.c:197:6:Error_Handler	1
+../Core/Src/main.c:70:5:main	7
+../Core/Src/main.c:145:13:compareStrings	2
+../Core/Src/main.c:150:13:usbSend	3
+../Core/Src/main.c:159:6:usb_parser	7
+../Core/Src/main.c:194:6:SystemClock_Config	3
+../Core/Src/main.c:245:6:Error_Handler	1

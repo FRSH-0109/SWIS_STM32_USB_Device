@@ -38,6 +38,9 @@
 #define SHTC3_CMD_MEAS_RH_T_CLOCKSTR_LPM	0x44DE /* meas. read RH first, clock stretching enabled in low power mode */
 
 #define SHTC3_CMD_READ_DATA					"SHTC3 READ"
+#define SHTC3_CMD_READ_STATE				"SHTC3 STATE"
+#define SHTC3_CMD_SET_PERIOD				"SHTC3 PERIOD:"
+#define SHTC3_CMD_SET_SINGLE				"SHTC3 SINGLE"
 
 /* Exported typedef ----------------------------------------------------------*/
 typedef struct {
@@ -47,7 +50,10 @@ typedef struct {
 
 typedef enum {
 	STHC3_IDLE,
-	SHTC3_MEASURE,
+	SHTC3_SINGLE_MEASURE,
+	SHTC3_CYCLIC_MEASURE,
+
+	SHTC3_SINGLE_MEASURE_START,
 }shtc3_state;
 
 typedef struct {
@@ -121,8 +127,9 @@ int shtc3_get_temp_and_hum_lpm(shtc3_t *const me, float *temp, float *hum);
  *
  * @return ESP_OK on success
  */
-int shtc3_get_temp_and_hum_polling(shtc3_t *const me, float *temp, float *hum);
-
+int shtc3_get_temp_and_hum_polling(shtc3_t *const me);
+int shtc3_raw_read_temp_and_hum(shtc3_t *const me);
+int shtc3_raw_write_temp_and_hum(shtc3_t *const me);
 /**
  * @brief Function to put the device in sleep mode
  *

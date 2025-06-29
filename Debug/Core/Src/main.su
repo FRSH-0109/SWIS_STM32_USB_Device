@@ -1,4 +1,6 @@
-../Core/Src/main.c:70:5:main	8	static
-../Core/Src/main.c:130:6:usb_parser	80	static
-../Core/Src/main.c:146:6:SystemClock_Config	88	static
-../Core/Src/main.c:197:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:70:5:main	80	static
+../Core/Src/main.c:145:13:compareStrings	24	static
+../Core/Src/main.c:150:13:usbSend	16	static
+../Core/Src/main.c:159:6:usb_parser	88	static
+../Core/Src/main.c:194:6:SystemClock_Config	88	static
+../Core/Src/main.c:245:6:Error_Handler	4	static,ignoring_inline_asm
