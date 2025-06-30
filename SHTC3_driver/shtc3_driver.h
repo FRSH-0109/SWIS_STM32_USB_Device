@@ -49,11 +49,13 @@ typedef struct {
 } shtc3_i2c_t;
 
 typedef enum {
-	STHC3_IDLE,
+	SHTC3_IDLE,
 	SHTC3_SINGLE_MEASURE,
 	SHTC3_CYCLIC_MEASURE,
 
 	SHTC3_SINGLE_MEASURE_START,
+	SHTC3_CYCLIC_MEASURE_START,
+	SHTC3_CYCLIC_MEASURE_WAIT,
 }shtc3_state;
 
 typedef struct {
@@ -62,6 +64,7 @@ typedef struct {
 	shtc3_state state;
 	float temp;
 	float hum;
+	uint32_t period_ms;
 } shtc3_t;
 
 /* Exported variables --------------------------------------------------------*/

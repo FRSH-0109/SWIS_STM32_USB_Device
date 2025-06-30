@@ -43,13 +43,14 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define SIMULATE 0
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 shtc3_t shtc3_sensor;
+uint8_t report[64] = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,10 +97,13 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  shtc3_init(&shtc3_sensor, &hi2c1, SHTC3_I2C_ADDR);
-  shtc3_wakeup(&shtc3_sensor);
-  shtc3_get_id(&shtc3_sensor);
-  shtc3_sleep(&shtc3_sensor);
+  if(0 == SIMULATE)
+  {
+	  shtc3_init(&shtc3_sensor, &hi2c1, SHTC3_I2C_ADDR);
+	  shtc3_wakeup(&shtc3_sensor);
+	  shtc3_get_id(&shtc3_sensor);
+	  shtc3_sleep(&shtc3_sensor);
+  }
 
   /* USER CODE END 2 */
 
@@ -107,33 +111,41 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	uint8_t ret	= 0;
-	switch(shtc3_sensor.state)
+	if(0 == SIMULATE)
 	{
-		case SHTC3_SINGLE_MEASURE_START:
-			 ret = shtc3_raw_write_temp_and_hum(&shtc3_sensor);
-			if(0 == ret) {shtc3_sensor.state = SHTC3_SINGLE_MEASURE;}
-		case SHTC3_SINGLE_MEASURE:
-			uint8_t report[64] = {0};
-			ret = shtc3_raw_read_temp_and_hum(&shtc3_sensor);
-			if(0 == ret)
-			{
-				shtc3_sleep(&shtc3_sensor);
-				memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
-				memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
-				usbSend(report, 8);
-				shtc3_sensor.state = STHC3_IDLE;
-			}
-			break;
+		uint8_t ret	= 0;
+		switch(shtc3_sensor.state)
+		{
+			case SHTC3_SINGLE_MEASURE_START:
+				 ret = shtc3_raw_write_temp_and_hum(&shtc3_sensor);
+				if(0 == ret) {shtc3_sensor.state = SHTC3_SINGLE_MEASURE;}
+			case SHTC3_SINGLE_MEASURE:
+				uint8_t report[64] = {0};
+				ret = shtc3_raw_read_temp_and_hum(&shtc3_sensor);
+				if(0 == ret)
+				{
+					shtc3_sleep(&shtc3_sensor);
+					memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
+					memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
+					usbSend(report, 8);
+					shtc3_sensor.state = SHTC3_IDLE;
+				}
+				break;
 
-		case SHTC3_CYCLIC_MEASURE:
-			break;
+			case SHTC3_CYCLIC_MEASURE:
+				break;
 
-		case STHC3_IDLE:
-		default:
-			shtc3_get_temp_and_hum(&shtc3_sensor);
-			break;
+			case SHTC3_IDLE:
+			default:
+	//			shtc3_get_temp_and_hum(&shtc3_sensor);
+				break;
+		}
+	}
+	else
+	{
+		shtc3_sensor.state = SHTC3_IDLE;
+		shtc3_sensor.temp = (float)rand()/(float)(RAND_MAX/50);
+		shtc3_sensor.hum = (float)rand()/(float)(RAND_MAX/100);
 	}
     /* USER CODE END WHILE */
 
@@ -156,23 +168,49 @@ static void usbSend(uint8_t *report, uint8_t len)
 	}
 }
 
+static bool shtc3ParsePeriod(const uint8_t *buffer, uint32_t *period_out)
+{
+    if (!buffer || !period_out)
+        return false;
+
+    uint32_t prefix_len = strlen(SHTC3_CMD_SET_PERIOD);
+
+    // Sprawdzenie prefiksu
+    if (strncmp((const char *)buffer, SHTC3_CMD_SET_PERIOD, prefix_len) != 0)
+        return false;
+
+    // Wskaźnik do miejsca po "SHTC3 PERIOD:"
+    const char *number_str = (const char *)(buffer + prefix_len);
+
+    // Parsowanie liczby
+    char *endptr;
+    unsigned long val = strtoul(number_str, &endptr, 10);
+
+    // Sprawdzenie, czy udało się sparsować oraz czy nie przekroczono uint32_t
+    if (number_str == endptr || val > UINT32_MAX || val < 0)
+        return false;
+
+    *period_out = (uint32_t)val;
+    return true;
+}
+
 void usb_parser(uint8_t *buffer, uint16_t max_len)
 {
+	memset(report, 0,sizeof(report));
 	if(compareStrings(buffer, SHTC3_CMD_READ_DATA, max_len))
 	{
-		uint8_t report[8];
 		memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
 		memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
-		usbSend(report, sizeof(report));
+		usbSend(report, 8);
 	}
 	else if(compareStrings(buffer, SHTC3_CMD_READ_STATE, max_len))
 	{
-		uint8_t report[64] = {0};
 		switch (shtc3_sensor.state)
 		{
-			case STHC3_IDLE:
+			case SHTC3_IDLE:
 				sprintf((char *)report, "SHTC3 IDLE");
 				break;
+			case SHTC3_SINGLE_MEASURE_START:
 			case SHTC3_SINGLE_MEASURE:
 				sprintf((char *)report, "SHTC3 SINGLE MEASURE");
 				break;
@@ -184,6 +222,38 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 				break;
 		}
 		usbSend(report, strlen((char *)report));
+	}
+	else if(compareStrings(buffer, SHTC3_CMD_SET_SINGLE, max_len))
+	{
+		switch (shtc3_sensor.state)
+		{
+			case SHTC3_IDLE:
+				shtc3_sensor.state = SHTC3_SINGLE_MEASURE_START;
+				break;
+			default:
+				sprintf((char *)report, "SHTC3 BUSY");
+				break;
+		}
+	}
+	else if(compareStrings(buffer, SHTC3_CMD_SET_PERIOD, max_len))
+	{
+		if(strlen((char *)buffer) < strlen(SHTC3_CMD_SET_PERIOD))
+		{
+			sprintf((char *)report, "SHTC3 PERIOD INCORRECT");
+			usbSend(report, strlen((char *)report));
+		}
+		uint32_t periodTmp = 0;
+		bool ret = shtc3ParsePeriod(buffer, &periodTmp);
+		if(ret)
+		{
+			shtc3_sensor.state = SHTC3_CYCLIC_MEASURE_START;
+			shtc3_sensor.period_ms = periodTmp;
+		}
+		else
+		{
+			sprintf((char *)report, "SHTC3 PERIOD INCORRECT");
+			usbSend(report, strlen((char *)report));
+		}
 	}
 }
 

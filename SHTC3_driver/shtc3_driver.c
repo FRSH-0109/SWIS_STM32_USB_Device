@@ -79,7 +79,7 @@ int shtc3_init(shtc3_t *const me, void *i2c_handle, uint8_t dev_addr)
 	me->i2c_dev.handle = (I2C_HandleTypeDef *)i2c_handle;
 	me->i2c_dev.addr = dev_addr;
 	me->id = 0;
-	me->state = STHC3_IDLE;
+	me->state = SHTC3_IDLE;
 
 	/* Return 0 */
 	return ret;
