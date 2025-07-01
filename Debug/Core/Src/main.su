@@ -1,7 +1,7 @@
-../Core/Src/main.c:71:5:main	80	static
-../Core/Src/main.c:157:13:compareStrings	24	static
-../Core/Src/main.c:162:13:usbSend	16	static
-../Core/Src/main.c:171:13:shtc3ParsePeriod	32	static
-../Core/Src/main.c:197:6:usb_parser	24	static
-../Core/Src/main.c:264:6:SystemClock_Config	88	static
-../Core/Src/main.c:315:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:71:5:main	16	static
+../Core/Src/main.c:177:13:compareStrings	24	static
+../Core/Src/main.c:182:13:usbSend	16	static
+../Core/Src/main.c:191:13:shtc3ParsePeriod	32	static
+../Core/Src/main.c:217:6:usb_parser	40	static
+../Core/Src/main.c:289:6:SystemClock_Config	88	static
+../Core/Src/main.c:340:6:Error_Handler	4	static,ignoring_inline_asm

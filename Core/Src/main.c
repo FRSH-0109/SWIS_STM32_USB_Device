@@ -120,7 +120,6 @@ int main(void)
 				 ret = shtc3_raw_write_temp_and_hum(&shtc3_sensor);
 				if(0 == ret) {shtc3_sensor.state = SHTC3_SINGLE_MEASURE;}
 			case SHTC3_SINGLE_MEASURE:
-				uint8_t report[64] = {0};
 				ret = shtc3_raw_read_temp_and_hum(&shtc3_sensor);
 				if(0 == ret)
 				{
@@ -131,10 +130,31 @@ int main(void)
 					shtc3_sensor.state = SHTC3_IDLE;
 				}
 				break;
-
-			case SHTC3_CYCLIC_MEASURE:
+			case SHTC3_CYCLIC_MEASURE_START:
+				ret = shtc3_raw_write_temp_and_hum(&shtc3_sensor);
+				if(0 == ret)
+				{
+					shtc3_sensor.state = SHTC3_CYCLIC_MEASURE;
+					shtc3_sensor.cyclic_timestamp = HAL_GetTick();
+				}
 				break;
-
+			case SHTC3_CYCLIC_MEASURE:
+				ret = shtc3_raw_read_temp_and_hum(&shtc3_sensor);
+				if(0 == ret)
+				{
+					shtc3_sleep(&shtc3_sensor);
+					memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
+					memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
+					usbSend(report, 8);
+					shtc3_sensor.state = SHTC3_CYCLIC_MEASURE_WAIT;
+				}
+				break;
+			case SHTC3_CYCLIC_MEASURE_WAIT:
+				if(HAL_GetTick() - shtc3_sensor.cyclic_timestamp >= shtc3_sensor.period_ms)
+				{
+					shtc3_sensor.state = SHTC3_CYCLIC_MEASURE_START;
+				}
+				break;
 			case SHTC3_IDLE:
 			default:
 	//			shtc3_get_temp_and_hum(&shtc3_sensor);
@@ -199,9 +219,8 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 	memset(report, 0,sizeof(report));
 	if(compareStrings(buffer, SHTC3_CMD_READ_DATA, max_len))
 	{
-		memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
-		memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
-		usbSend(report, 8);
+		sprintf((char *)report, "SHTC3 DATA: %.3f %.3f", shtc3_sensor.temp, shtc3_sensor.hum);
+		usbSend(report, strlen((char *)report));
 	}
 	else if(compareStrings(buffer, SHTC3_CMD_READ_STATE, max_len))
 	{
@@ -246,14 +265,20 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 		bool ret = shtc3ParsePeriod(buffer, &periodTmp);
 		if(ret)
 		{
-			shtc3_sensor.state = SHTC3_CYCLIC_MEASURE_START;
 			shtc3_sensor.period_ms = periodTmp;
+			if(periodTmp != 0) { shtc3_sensor.state = SHTC3_CYCLIC_MEASURE_START;}
+			else {shtc3_sensor.state = SHTC3_IDLE;}
 		}
 		else
 		{
 			sprintf((char *)report, "SHTC3 PERIOD INCORRECT");
 			usbSend(report, strlen((char *)report));
 		}
+	}
+	else if(compareStrings(buffer, SHTC3_CMD_GET_PERIOD, max_len))
+	{
+		sprintf((char *)report, "SHTC3 PERIOD: %ld", shtc3_sensor.period_ms);
+		usbSend(report, strlen((char *)report));
 	}
 }
 

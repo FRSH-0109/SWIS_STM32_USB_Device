@@ -40,6 +40,7 @@
 #define SHTC3_CMD_READ_DATA					"SHTC3 READ"
 #define SHTC3_CMD_READ_STATE				"SHTC3 STATE"
 #define SHTC3_CMD_SET_PERIOD				"SHTC3 PERIOD:"
+#define SHTC3_CMD_GET_PERIOD				"SHTC3 PERIOD?"
 #define SHTC3_CMD_SET_SINGLE				"SHTC3 SINGLE"
 
 /* Exported typedef ----------------------------------------------------------*/
@@ -52,7 +53,6 @@ typedef enum {
 	SHTC3_IDLE,
 	SHTC3_SINGLE_MEASURE,
 	SHTC3_CYCLIC_MEASURE,
-
 	SHTC3_SINGLE_MEASURE_START,
 	SHTC3_CYCLIC_MEASURE_START,
 	SHTC3_CYCLIC_MEASURE_WAIT,
@@ -65,6 +65,7 @@ typedef struct {
 	float temp;
 	float hum;
 	uint32_t period_ms;
+	uint32_t cyclic_timestamp;
 } shtc3_t;
 
 /* Exported variables --------------------------------------------------------*/
