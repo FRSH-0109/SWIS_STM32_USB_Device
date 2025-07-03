@@ -27,6 +27,8 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_customhid.h"
 #include "shtc3_driver.h"
+#include "bme280_driver.h"
+//#include "bme280_driver.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END Includes */
@@ -49,8 +51,11 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-shtc3_t shtc3_sensor;
-uint8_t report[64] = {0};
+volatile shtc3_t shtc3_sensor;
+volatile bme280_t bme280_sensor;
+volatile uint8_t report[64] = {0};
+volatile uint8_t local_buffer[64] = {0};
+volatile uint8_t local_len = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,12 +102,21 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+
   if(0 == SIMULATE)
   {
 	  shtc3_init(&shtc3_sensor, &hi2c1, SHTC3_I2C_ADDR);
 	  shtc3_wakeup(&shtc3_sensor);
 	  shtc3_get_id(&shtc3_sensor);
 	  shtc3_sleep(&shtc3_sensor);
+
+	  bme280_init(&bme280_sensor, &hi2c1);
+	  bme280_reset(&bme280_sensor);
+	  HAL_Delay(100);
+	  bme280_check_id(&bme280_sensor);
+	  bme280_configure(&bme280_sensor);
+	  bme280_read_calibration_data(&bme280_sensor);
+	  bme280_force_measurement(&bme280_sensor);
   }
 
   /* USER CODE END 2 */
@@ -111,6 +125,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	usb_parser();
 	if(0 == SIMULATE)
 	{
 		uint8_t ret	= 0;
@@ -124,9 +139,8 @@ int main(void)
 				if(0 == ret)
 				{
 					shtc3_sleep(&shtc3_sensor);
-					memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
-					memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
-					usbSend(report, 8);
+					sprintf((char *)report, "SHTC3 DATA: %.3f %.3f", shtc3_sensor.temp, shtc3_sensor.hum);
+					usbSend(report, strlen((char *)report));
 					shtc3_sensor.state = SHTC3_IDLE;
 				}
 				break;
@@ -143,9 +157,8 @@ int main(void)
 				if(0 == ret)
 				{
 					shtc3_sleep(&shtc3_sensor);
-					memcpy(&report[0], &shtc3_sensor.temp, sizeof(shtc3_sensor.temp));
-					memcpy(&report[4], &shtc3_sensor.hum, sizeof(shtc3_sensor.hum));
-					usbSend(report, 8);
+					sprintf((char *)report, "SHTC3 DATA: %.3f %.3f", shtc3_sensor.temp, shtc3_sensor.hum);
+					usbSend(report, strlen((char *)report));
 					shtc3_sensor.state = SHTC3_CYCLIC_MEASURE_WAIT;
 				}
 				break;
@@ -160,12 +173,61 @@ int main(void)
 	//			shtc3_get_temp_and_hum(&shtc3_sensor);
 				break;
 		}
+
+		ret	= 0;
+		switch(bme280_sensor.state)
+		{
+			case BME280_SINGLE_MEASURE_START:
+				ret = bme280_force_measurement(&bme280_sensor);
+				if(1 == ret) {bme280_sensor.state = BME280_SINGLE_MEASURE;}
+			case BME280_SINGLE_MEASURE:
+				ret = bme280_read_float(&bme280_sensor);
+				if(1 == ret)
+				{
+					sprintf((char *)report, "BME280 DATA: %.3f %.3f", bme280_sensor.raw_temp, bme280_sensor.raw_hum);
+					usbSend(report, strlen((char *)report));
+					bme280_sensor.state = BME280_IDLE;
+					bme280_sleep(&bme280_sensor);
+				}
+				break;
+			case SHTC3_CYCLIC_MEASURE_START:
+				ret = bme280_force_measurement(&bme280_sensor);
+				if(1 == ret)
+				{
+					bme280_sensor.state = BME280_CYCLIC_MEASURE;
+					bme280_sensor.cyclic_timestamp = HAL_GetTick();
+				}
+				break;
+			case BME280_CYCLIC_MEASURE:
+				ret = bme280_read_float(&bme280_sensor);
+				if(1 == ret)
+				{
+					sprintf((char *)report, "BME280 DATA: %.3f %.3f", bme280_sensor.raw_temp, bme280_sensor.raw_hum);
+					usbSend(report, strlen((char *)report));
+					bme280_sensor.state = BME280_CYCLIC_MEASURE_WAIT;
+				}
+				break;
+			case BME280_CYCLIC_MEASURE_WAIT:
+				if(HAL_GetTick() - bme280_sensor.cyclic_timestamp >= bme280_sensor.period_ms)
+				{
+					bme280_sensor.state = BME280_CYCLIC_MEASURE_START;
+				}
+				break;
+			case BME280_IDLE:
+			default:
+	//			shtc3_get_temp_and_hum(&shtc3_sensor);
+				break;
+		}
 	}
 	else
 	{
 		shtc3_sensor.state = SHTC3_IDLE;
 		shtc3_sensor.temp = (float)rand()/(float)(RAND_MAX/50);
 		shtc3_sensor.hum = (float)rand()/(float)(RAND_MAX/100);
+
+		bme280_sensor.state = BME280_IDLE;
+		bme280_sensor.raw_temp = (float)rand()/(float)(RAND_MAX/50);
+		bme280_sensor.raw_hum = (float)rand()/(float)(RAND_MAX/100);
 	}
     /* USER CODE END WHILE */
 
@@ -188,15 +250,15 @@ static void usbSend(uint8_t *report, uint8_t len)
 	}
 }
 
-static bool shtc3ParsePeriod(const uint8_t *buffer, uint32_t *period_out)
+static bool parsePeriod(const uint8_t *buffer, uint32_t *period_out, char* str)
 {
     if (!buffer || !period_out)
         return false;
 
-    uint32_t prefix_len = strlen(SHTC3_CMD_SET_PERIOD);
+    uint32_t prefix_len = strlen(str);
 
     // Sprawdzenie prefiksu
-    if (strncmp((const char *)buffer, SHTC3_CMD_SET_PERIOD, prefix_len) != 0)
+    if (strncmp((const char *)buffer, str, prefix_len) != 0)
         return false;
 
     // Wskaźnik do miejsca po "SHTC3 PERIOD:"
@@ -213,13 +275,36 @@ static bool shtc3ParsePeriod(const uint8_t *buffer, uint32_t *period_out)
     *period_out = (uint32_t)val;
     return true;
 }
-
-void usb_parser(uint8_t *buffer, uint16_t max_len)
+void usb_copy_buffer(uint8_t *buffer, uint16_t max_len)
 {
+	memset(local_buffer, 0, sizeof(local_buffer));
+	memcpy(local_buffer, buffer, max_len);
+	local_len = max_len;
+}
+
+void usb_parser()
+{
+	uint8_t buffer[64] = {0};
+	uint16_t max_len = local_len;
+	if(local_len != 0)
+	{
+		memcpy(buffer, local_buffer, local_len);
+		memset(local_buffer, 0, sizeof(local_buffer));
+		local_len = 0;
+	}
+	else
+	{
+		return;
+	}
 	memset(report, 0,sizeof(report));
 	if(compareStrings(buffer, SHTC3_CMD_READ_DATA, max_len))
 	{
 		sprintf((char *)report, "SHTC3 DATA: %.3f %.3f", shtc3_sensor.temp, shtc3_sensor.hum);
+		usbSend(report, strlen((char *)report));
+	}
+	if(compareStrings(buffer, BME280_CMD_READ_DATA, max_len))
+	{
+		sprintf((char *)report, "BME280 DATA: %.3f %.3f", bme280_sensor.raw_temp, bme280_sensor.raw_hum);
 		usbSend(report, strlen((char *)report));
 	}
 	else if(compareStrings(buffer, SHTC3_CMD_READ_STATE, max_len))
@@ -242,6 +327,26 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 		}
 		usbSend(report, strlen((char *)report));
 	}
+	else if(compareStrings(buffer, BME280_CMD_READ_STATE, max_len))
+	{
+		switch (bme280_sensor.state)
+		{
+			case BME280_IDLE:
+				sprintf((char *)report, "BME280 IDLE");
+				break;
+			case BME280_SINGLE_MEASURE_START:
+			case BME280_SINGLE_MEASURE:
+				sprintf((char *)report, "BME280 SINGLE MEASURE");
+				break;
+			case BME280_CYCLIC_MEASURE:
+				sprintf((char *)report, "BME280 CYCLIC MEASURE");
+				break;
+			default:
+				sprintf((char *)report, "BME280 UNKNOW");
+				break;
+		}
+		usbSend(report, strlen((char *)report));
+	}
 	else if(compareStrings(buffer, SHTC3_CMD_SET_SINGLE, max_len))
 	{
 		switch (shtc3_sensor.state)
@@ -254,6 +359,18 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 				break;
 		}
 	}
+	else if(compareStrings(buffer, BME280_CMD_SET_SINGLE, max_len))
+	{
+		switch (bme280_sensor.state)
+		{
+			case BME280_IDLE:
+				bme280_sensor.state = BME280_SINGLE_MEASURE_START;
+				break;
+			default:
+				sprintf((char *)report, "BME280 BUSY");
+				break;
+		}
+	}
 	else if(compareStrings(buffer, SHTC3_CMD_SET_PERIOD, max_len))
 	{
 		if(strlen((char *)buffer) < strlen(SHTC3_CMD_SET_PERIOD))
@@ -262,7 +379,7 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 			usbSend(report, strlen((char *)report));
 		}
 		uint32_t periodTmp = 0;
-		bool ret = shtc3ParsePeriod(buffer, &periodTmp);
+		bool ret = parsePeriod(buffer, &periodTmp, SHTC3_CMD_SET_PERIOD);
 		if(ret)
 		{
 			shtc3_sensor.period_ms = periodTmp;
@@ -275,9 +392,35 @@ void usb_parser(uint8_t *buffer, uint16_t max_len)
 			usbSend(report, strlen((char *)report));
 		}
 	}
+	else if(compareStrings(buffer, BME280_CMD_SET_PERIOD, max_len))
+	{
+		if(strlen((char *)buffer) < strlen(BME280_CMD_SET_PERIOD))
+		{
+			sprintf((char *)report, "BME280 PERIOD INCORRECT");
+			usbSend(report, strlen((char *)report));
+		}
+		uint32_t periodTmp = 0;
+		bool ret = parsePeriod(buffer, &periodTmp, BME280_CMD_SET_PERIOD);
+		if(ret)
+		{
+			bme280_sensor.period_ms = periodTmp;
+			if(periodTmp != 0) { bme280_sensor.state = BME280_CYCLIC_MEASURE_START;}
+			else {bme280_sensor.state = BME280_IDLE;bme280_sleep(&bme280_sensor);}
+		}
+		else
+		{
+			sprintf((char *)report, "BME280 PERIOD INCORRECT");
+			usbSend(report, strlen((char *)report));
+		}
+	}
 	else if(compareStrings(buffer, SHTC3_CMD_GET_PERIOD, max_len))
 	{
 		sprintf((char *)report, "SHTC3 PERIOD: %ld", shtc3_sensor.period_ms);
+		usbSend(report, strlen((char *)report));
+	}
+	else if(compareStrings(buffer, BME280_CMD_GET_PERIOD, max_len))
+	{
+		sprintf((char *)report, "BME280 PERIOD: %ld", bme280_sensor.period_ms);
 		usbSend(report, strlen((char *)report));
 	}
 }

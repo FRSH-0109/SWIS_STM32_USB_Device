@@ -198,7 +198,9 @@ static int8_t CUSTOM_HID_OutEvent_FS(uint8_t *buffer)
   /* USER CODE BEGIN 6 */
   HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
 
-  usb_parser(buffer, 64);
+  usb_copy_buffer(buffer, 64);
+
+  memset(buffer, 0, strlen(buffer));
 
   /* Start next USB packet transfer once data processing is completed */
   if (USBD_CUSTOM_HID_ReceivePacket(&hUsbDeviceFS) != (uint8_t)USBD_OK)

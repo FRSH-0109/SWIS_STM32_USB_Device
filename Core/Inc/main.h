@@ -36,7 +36,8 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-void usb_parser(uint8_t *buffer, uint16_t max_len);
+void usb_parser();
+void usb_copy_buffer(uint8_t *buffer, uint16_t max_len);
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
